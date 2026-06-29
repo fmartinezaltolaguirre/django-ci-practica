@@ -2,9 +2,9 @@ name: Django CI
 
 on:
   push:
-    branches: [ "main" ]
+    branches: ["main"]
   pull_request:
-    branches: [ "main" ]
+    branches: ["main"]
 
 jobs:
   build:
@@ -18,17 +18,38 @@ jobs:
     - name: Checkout code
       uses: actions/checkout@v4
 
+    # Configuración de Python con matrix
     - name: Set up Python ${{ matrix.python-version }}
       uses: actions/setup-python@v4
       with:
         python-version: ${{ matrix.python-version }}
 
+    # Cache para acelerar dependencias
+    - name: Cache pip
+      uses: actions/cache@v3
+      with:
+        path: ~/.cache/pip
+        key: ${{ runner.os }}-pip-${{ hashFiles('**/requirements.txt') }}
+        restore-keys: |
+          ${{ runner.os }}-pip-
+
+    # Instalación 
     - name: Install Dependencies
       run: |
         python -m pip install --upgrade pip
-        pip install django
-        pip install pytest
+        pip install -r requirements.txt
 
+    # Migraciones 
+    - name: Apply migrations
+      run: |
+        python manage.py migrate
+
+    # Comprobación básica del proyecto
+    - name: Check project
+      run: |
+        python manage.py check
+
+    # Ejecutar tests
     - name: Run Tests
       run: |
         python manage.py test
